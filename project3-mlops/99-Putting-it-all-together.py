@@ -147,9 +147,9 @@ X_train,X_test,y_train,y_test=train_test_split(X,Y, test_size=0.3, random_state=
 # COMMAND ----------
 
 # TODO
-from sklearn.linear_model import LinearRegression
-lr=LinearRegression()
-lr_fit=lr.fit(X_train,y_train)
+from sklearn.ensemble import RandomForestRegressor
+rf = RandomForestRegressor()
+rf.fit(X_train, y_train)
 
 # COMMAND ----------
 
@@ -160,8 +160,8 @@ lr_fit=lr.fit(X_train,y_train)
 
 # TODO
 from sklearn.metrics import mean_squared_error
-y_pred=lr_fit.predict(X_test)
-mean_squared_error(y_test,y_pred)
+predictions = rf.predict(X_test)
+mse=mean_squared_error(y_test,y_pred)
 
 # COMMAND ----------
 
