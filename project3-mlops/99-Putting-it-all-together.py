@@ -65,7 +65,8 @@ display(airbnbDF)
 
 # COMMAND ----------
 
-# TODO
+#TODO
+airbnbDF['price']=(airbnbDF['price'].replace('\$|,', '', regex=True)).astype(float)
 
 # COMMAND ----------
 
