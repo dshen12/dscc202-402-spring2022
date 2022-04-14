@@ -78,6 +78,12 @@ airbnbDF['price']=(airbnbDF['price'].replace('\$|,', '', regex=True)).astype(flo
 # COMMAND ----------
 
 # TODO
+features_drop=['host_is_superhost','host_total_listings_count','latitude', 'longitude', 'review_scores_accuracy',
+       'review_scores_cleanliness', 'review_scores_checkin',
+       'review_scores_communication', 'review_scores_location',
+       'review_scores_value','zipcode']
+
+airbnbDF=airbnbDF.drop(features_drop, axis=1)
 
 # COMMAND ----------
 
@@ -88,6 +94,25 @@ airbnbDF['price']=(airbnbDF['price'].replace('\$|,', '', regex=True)).astype(flo
 # COMMAND ----------
 
 # TODO
+airbnbDF['bathrooms']=airbnbDF['bathrooms'].fillna(value=airbnbDF['bathrooms'].mean())
+airbnbDF['beds']=airbnbDF['beds'].fillna(value=airbnbDF['beds'].mean())
+airbnbDF['review_scores_rating']=airbnbDF['review_scores_rating'].fillna(value=airbnbDF['review_scores_rating'].mean())
+airbnbDF['bathrooms']=airbnbDF['bathrooms'].astype(int)
+airbnbDF['beds']=airbnbDF['beds'].astype(int)
+airbnbDF['review_scores_rating']=airbnbDF['review_scores_rating'].astype(int)
+
+# COMMAND ----------
+
+airbnbDF.cancellation_policy=airbnbDF.cancellation_policy.astype('category').cat.codes
+airbnbDF.instant_bookable=airbnbDF.instant_bookable.astype('category').cat.codes
+airbnbDF.neighbourhood_cleansed=airbnbDF.neighbourhood_cleansed.astype('category').cat.codes
+airbnbDF.property_type=airbnbDF.property_type.astype('category').cat.codes
+airbnbDF.room_type=airbnbDF.room_type.astype('category').cat.codes
+airbnbDF.bed_type=airbnbDF.bed_type.astype('category').cat.codes
+
+# COMMAND ----------
+
+airbnbDF.info()
 
 # COMMAND ----------
 
@@ -100,7 +125,9 @@ airbnbDF['price']=(airbnbDF['price'].replace('\$|,', '', regex=True)).astype(flo
 
 # TODO
 from sklearn.model_selection import train_test_split
-
+X=airbnbDF.drop('price',axis=1)
+Y=airbnbDF['price']
+X_train,X_test,y_train,y_test=train_test_split(X,Y, test_size=0.3, random_state=402)
 
 # COMMAND ----------
 
@@ -120,6 +147,9 @@ from sklearn.model_selection import train_test_split
 # COMMAND ----------
 
 # TODO
+from sklearn.linear_model import LinearRegression
+lr=LinearRegression()
+lr_fit=lr.fit(X_train,y_train)
 
 # COMMAND ----------
 
@@ -129,6 +159,9 @@ from sklearn.model_selection import train_test_split
 # COMMAND ----------
 
 # TODO
+from sklearn.metrics import mean_squared_error
+y_pred=lr_fit.predict(X_test)
+mean_squared_error(y_test,y_pred)
 
 # COMMAND ----------
 
