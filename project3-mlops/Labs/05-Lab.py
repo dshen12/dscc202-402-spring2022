@@ -232,14 +232,6 @@ loaded_preprocess_model.predict(X_test)
 
 # COMMAND ----------
 
-t=loaded_preprocess_model.predict(X_test)
-
-# COMMAND ----------
-
-t_tolist=['Expensive' if x>100 else 'Not Expensive' for x in t]
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ## Adding Post-Processing Steps
 # MAGIC 
