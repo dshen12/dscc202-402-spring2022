@@ -261,18 +261,6 @@ rf_pyfunc_model = mlflow.pyfunc.load_model(model_path)
 
 # COMMAND ----------
 
-pred=rf_pyfunc_model.predict(X_test)
-
-# COMMAND ----------
-
-import numpy as np
-
-# COMMAND ----------
-
-np.array(pred/X_test['accommodates'])
-
-# COMMAND ----------
-
 # TODO
 
 class Airbnb_Model(mlflow.pyfunc.PythonModel):
