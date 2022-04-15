@@ -161,7 +161,7 @@ rf.fit(X_train, y_train)
 # TODO
 from sklearn.metrics import mean_squared_error
 predictions = rf.predict(X_test)
-mse=mean_squared_error(y_test,y_pred)
+mse=mean_squared_error(y_test,predictions)
 
 # COMMAND ----------
 
@@ -173,7 +173,58 @@ mse=mean_squared_error(y_test,y_pred)
 
 # TODO
 import mlflow.sklearn
+params = {
+  "n_estimators": 1000,
+  "max_depth": 15,
+  "random_state": 42
+}
+ 
+with mlflow.start_run(run_name="Basic RF Experiment") as run:
+  # Create model, train it, and create predictions
+  rf = RandomForestRegressor()
+  rf.fit(X_train, y_train)
+  predictions = rf.predict(X_test)
+  
+  # Log model
+  mlflow.sklearn.log_model(rf, "random-forest-model")
+  
+  # Create metrics
+  mse = mean_squared_error(y_test, predictions)
+  print(f"mse: {mse}")
+  
+  # Log metrics
+  mlflow.log_metric("mse", mse)
+  
+  runID = run.info.run_uuid
+  experimentID = run.info.experiment_id
+  
+  print(f"Inside MLflow Run with run_id `{runID}` and experiment_id `{experimentID}`")
 
+# COMMAND ----------
+
+import mlflow.sklearn
+from sklearn.svm import LinearSVC
+ 
+with mlflow.start_run(run_name="Basic RF Experiment") as run:
+  # Create model, train it, and create predictions
+  svc = LinearSVC()
+  svc.fit(X_train, y_train)
+  predictions = svc.predict(X_test)
+  
+  # Log model
+  mlflow.sklearn.log_model(svc, "SVM-model")
+  
+  # Create metrics
+  mse = mean_squared_error(y_test, predictions)
+  print(f"mse: {mse}")
+  
+  # Log metrics
+  mlflow.log_metric("mse", mse)
+  
+  runID = run.info.run_uuid
+  experimentID = run.info.experiment_id
+  
+  print(f"Inside MLflow Run with run_id `{runID}` and experiment_id `{experimentID}`")
 
 # COMMAND ----------
 
@@ -191,6 +242,8 @@ import mlflow.sklearn
 
 # TODO
 import mlflow.pyfunc
+model_path="dbfs:/databricks/mlflow-tracking/17364502164236/2a0a8df99b6a4f3fb3e73541057f7504/artifacts/random-forest-model"
+rf_pyfunc_model = mlflow.pyfunc.load_model(model_path)
 
 # COMMAND ----------
 
@@ -208,6 +261,18 @@ import mlflow.pyfunc
 
 # COMMAND ----------
 
+pred=rf_pyfunc_model.predict(X_test)
+
+# COMMAND ----------
+
+import numpy as np
+
+# COMMAND ----------
+
+np.array(pred/X_test['accommodates'])
+
+# COMMAND ----------
+
 # TODO
 
 class Airbnb_Model(mlflow.pyfunc.PythonModel):
@@ -216,7 +281,9 @@ class Airbnb_Model(mlflow.pyfunc.PythonModel):
         self.model = model
     
     def predict(self, context, model_input):
-        # FILL_IN
+        pred=self.model.predict(model_input)
+        accommodates=model_input['accommodates']
+        return pred/accommodates
 
 
 # COMMAND ----------
@@ -226,10 +293,20 @@ class Airbnb_Model(mlflow.pyfunc.PythonModel):
 
 # COMMAND ----------
 
+# MAGIC %sh rm -r '/dbfs/user/dshen12@ur.rochester.edu/mlflow/99_putting_it_all_together_psp/final-model'
+
+# COMMAND ----------
+
 # TODO
+
 final_model_path =  f"{working_path}/final-model"
 
 # FILL_IN
+price_per_person_per_night = Airbnb_Model(model=rf_pyfunc_model)
+
+dbutils.fs.rm(final_model_path, True) # Allows you to rerun the code multiple times
+ 
+mlflow.pyfunc.save_model(path=final_model_path.replace("dbfs:", "/dbfs"),python_model=price_per_person_per_night)
 
 # COMMAND ----------
 
@@ -239,6 +316,9 @@ final_model_path =  f"{working_path}/final-model"
 # COMMAND ----------
 
 # TODO
+loaded_model = mlflow.pyfunc.load_model(final_model_path)
+model_input=X_test
+model_output = loaded_model.predict(model_input)
 
 # COMMAND ----------
 
@@ -257,9 +337,10 @@ final_model_path =  f"{working_path}/final-model"
 # COMMAND ----------
 
 # TODO
-save the testing data 
+#save the testing data 
 test_data_path = f"{working_path}/test_data.csv"
 # FILL_IN
+X_test.to_csv(test_data_path,index=False)
 
 prediction_path = f"{working_path}/predictions.csv"
 
@@ -282,8 +363,11 @@ import pandas as pd
 @click.option("--test_data_path", default="", type=str)
 @click.option("--prediction_path", default="", type=str)
 def model_predict(final_model_path, test_data_path, prediction_path):
-    # FILL_IN
-
+  loaded_model = mlflow.pyfunc.load_model(final_model_path)
+  model_input = pd.read_csv(test_data_path)
+  model_output = loaded_model.predict(model_input)
+  pred=pd.DataFrame(model_output).reset_index(drop=True)
+  pred.to_csv(prediction_path,index=False)
 
 # test model_predict function    
 demo_prediction_path = f"{working_path}/predictions.csv"
@@ -315,9 +399,12 @@ conda_env: conda.yaml
 entry_points:
   main:
     parameters:
-      #FILL_IN
-    command:  "python predict.py #FILL_IN"
+      test_data_path: {type: str, default: test_data_path}
+      final_model_path: {type: str, default: final_model_path}
+      prediction_path: {type: str, default: prediction_path}
+    command: "python predict.py --test_data_path {test_data_path} --final_model_path {final_model_path} --prediction_path {prediction_path}"
 '''.strip(), overwrite=True)
+
 
 # COMMAND ----------
 
@@ -370,7 +457,16 @@ import click
 import mlflow.pyfunc
 import pandas as pd
 
-# put model_predict function with decorators here
+@click.command()
+@click.option("--final_model_path", default="", type=str)
+@click.option("--test_data_path", default="", type=str)
+@click.option("--prediction_path", default="", type=str)
+def model_predict(final_model_path, test_data_path, prediction_path):
+  loaded_model = mlflow.pyfunc.load_model(final_model_path)
+  model_input = pd.read_csv(test_data_path)
+  model_output = loaded_model.predict(model_input)
+  pred=pd.DataFrame(model_output).reset_index(drop=True)
+  pred.to_csv(prediction_path,index=False)
     
 if __name__ == "__main__":
   model_predict()
@@ -398,11 +494,18 @@ display( dbutils.fs.ls(workingDir) )
 
 # COMMAND ----------
 
-# TODO
 second_prediction_path = f"{working_path}/predictions-2.csv"
+
+# COMMAND ----------
+
+# TODO
 mlflow.projects.run(working_path,
    # FILL_IN
-)
+  parameters={
+    "prediction_path": second_prediction_path,
+    "final_model_path": final_model_path,
+    "test_data_path": test_data_path            
+  })
 
 # COMMAND ----------
 
