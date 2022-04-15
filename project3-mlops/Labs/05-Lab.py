@@ -144,7 +144,7 @@ rf2_run = sorted(client.list_run_infos(experimentID), key=lambda r: r.start_time
 rf2_path = rf2_run.artifact_uri+"/random-forest-model-preprocess/"
 
 #rf2_pyfunc_model = mlflow.pyfunc.load_pyfunc(rf2_path.replace("dbfs:", "/dbfs")) original
-rf2_pyfunc_model = mlflow.pyfunc.load_model(rf2_path.replace("dbfs:", "/dbfs")) 
+rf2_pyfunc_model = mlflow.pyfunc.load_model(rf2_path) 
 
 # COMMAND ----------
 
