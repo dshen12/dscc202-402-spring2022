@@ -135,7 +135,6 @@ def mlflow_rf(data_path, bootstrap, min_impurity_decrease):
     mlflow.sklearn.log_model(rf, "random-forest-model")
     
     # Log params
-    mlflow.log_param("data_path", data_path)
     mlflow.log_param("bootstrap", bootstrap)
     mlflow.log_param("min_impurity_decrease", min_impurity_decrease)
  
