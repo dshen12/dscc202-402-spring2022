@@ -36,7 +36,6 @@ wallet_balance_df = spark.read.format('delta').load("/mnt/dscc202-datasets/misc/
 wallet_count_df = spark.read.format('delta').load("/mnt/dscc202-datasets/misc/G06/tokenrec/wctables")
 tokens_df = spark.read.format('delta').load("/mnt/dscc202-datasets/misc/G06/tokenrec/tokentables")
 
-
 # COMMAND ----------
 
 from pyspark.sql.functions import col
@@ -58,7 +57,6 @@ wallet_count_df.printSchema()
 
 tokens_df.cache()
 tokens_df.printSchema()
-
 
 # COMMAND ----------
 
@@ -140,8 +138,8 @@ cmap = cm.get_cmap(colorMap)
 fig, ax = prepareSubplot(np.arange(0, 10, 1), np.arange(0, 80, 5))
 plt.bar(np.linspace(1,10,10), number_transactions, width=bar_width, color=cmap(0))
 plt.xticks(np.linspace(1,10,10) + bar_width/2.0, np.linspace(1,10,10))
-plt.xlabel('Number of Plays'); plt.ylabel('%')
-plt.title('Percentage Number of Plays of Songs')
+plt.xlabel('Number of transactions'); plt.ylabel('%')
+plt.title('Percentage Number of Plays of transactions')
 display(fig)
 
 # COMMAND ----------
@@ -162,8 +160,8 @@ from mlflow.types.schema import Schema, ColSpec
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
-df=sqlContext.sql("select * from G05_db.SilverTable_Wallets")
-result_df = df.select("*").toPandas()
+# df=sqlContext.sql("select * from G05_db.SilverTable_Wallets")
+# result_df = df.select("*").toPandas()
 token_ids_with_total_transactions = wallet_count_df.groupBy('tokenId') \
                                                        .agg(F.count(wallet_count_df.transaction).alias('Transaction_Count'),
                                                             F.sum(wallet_count_df.transaction).alias('Total_transaction')) \
@@ -172,7 +170,6 @@ token_ids_with_total_transactions = wallet_count_df.groupBy('tokenId') \
 print('token_ids_with_total_transactions:',
 token_ids_with_total_transactions.show(3, truncate=False))
 
-# Join with metadata to get artist and song title
 token_names_with_transaction_df = token_ids_with_total_transactions.join(tokens_df,  token_ids_with_total_transactions.tokenId == tokens_df.address) \
                                                       .filter('Transaction_Count >= 2') \
                                                       .select('name', 'symbol', 'address', 'Transaction_Count','Total_transaction') \
@@ -180,6 +177,10 @@ token_names_with_transaction_df = token_ids_with_total_transactions.join(tokens_
 
 #print('token_names_with_transaction_df:',
 #token_names_with_transaction_df.show(20, truncate = False))
+
+# COMMAND ----------
+
+token_names_with_transaction_df.show(3, truncate = False)
 
 # COMMAND ----------
 
