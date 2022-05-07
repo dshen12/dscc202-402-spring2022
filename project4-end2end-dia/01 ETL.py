@@ -41,6 +41,12 @@ spark.conf.set('start.date',start_date)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## Group 6 Pipeline
+# MAGIC ![Image](https://github.com/carolxueyq/dscc202-402-spring2022/blob/final_project/project4-end2end-dia/pipeline.png?raw=true)
+
+# COMMAND ----------
+
 # MAGIC %sql
 # MAGIC show tables in ethereumetl
 
@@ -65,6 +71,21 @@ from pyspark.sql.functions import col,count
 # COMMAND ----------
 
 erc20_contract = silvercontractDF.filter(silvercontractDF["is_erc20"]==True)
+
+# COMMAND ----------
+
+from pyspark.sql.types import _parse_datatype_string
+from pyspark.sql.types import *
+
+ddl_schema = StructType([
+  StructField("address", StringType(), True),
+  StructField("bytecode", StringType(), True),
+  StructField("is_erc20", StringType(), True),
+  StructField("is_erc721", StringType(), True),   
+])
+
+assert ddl_schema == _parse_datatype_string("address string, bytecode string, is_erc20 string, is_erc721 string"), "File not present in Silver Path"
+print("Assertion passed.")
 
 # COMMAND ----------
 
@@ -94,6 +115,25 @@ LOCATION "{erc20_contract_delta_dir}"
 # COMMAND ----------
 
 erc20_token_transfer = tokentransferDF.join(silvercontractDF, tokentransferDF.token_address==silvercontractDF.address,how="left").filter(silvercontractDF["is_erc20"]==True).drop("address","bytecode","is_erc721")
+
+# COMMAND ----------
+
+ddl_schema = StructType([
+  StructField("token_address", StringType(), True),
+  StructField("from_address", StringType(), True),
+  StructField("to_address", StringType(), True),
+  StructField("value", DecimalType(38,0), True),   
+  StructField("transaction_hash", StringType(), True),
+  StructField("log_index", LongType(), True),
+  StructField("block_number", LongType(), True),
+  StructField("start_block", LongType(), True),
+  StructField("end_block", LongType(), True), 
+  StructField("is_erc20", StringType(), True),
+])
+
+assert ddl_schema == _parse_datatype_string("token_address string ,from_address string ,to_address string ,value decimal(38,0) ,transaction_hash string ,log_index long ,block_number long ,start_block long ,end_block long ,is_erc20 string"), "File not present in Silver Path"
+
+print("Assertion passed.")
 
 # COMMAND ----------
 
@@ -129,6 +169,22 @@ erc20_tokentransferDF = spark.sql("select * from G06_db.erc20_token_transfer")
 dbutils.fs.rm(f"/mnt/dscc202-datasets/misc/G06/tokenrec/tokentables/", recurse=True)
 token_delta_dir = f"/mnt/dscc202-datasets/misc/G06/tokenrec/tokentables/"
 dbutils.fs.mkdirs(token_delta_dir)
+
+# COMMAND ----------
+
+ddl_schema = StructType([
+  StructField("address", StringType(), True),
+  StructField("symbol", StringType(), True),
+  StructField("name", StringType(), True),
+  StructField("decimals", LongType(), True),
+  StructField("total_supply", DecimalType(38,0), True),   
+  StructField("start_block", LongType(), True),
+  StructField("end_block", LongType(), True), 
+])
+
+assert ddl_schema == _parse_datatype_string("address string, symbol string, name string, decimals long, total_supply decimal(38,0), start_block long, end_block long"), "File not present in Silver Path"
+
+print("Assertion passed.")
 
 # COMMAND ----------
 
@@ -208,11 +264,38 @@ erc20_tokentransfer = spark.sql("select token_address,from_address,to_address,va
 
 # COMMAND ----------
 
+ddl_schema = StructType([
+  StructField("token_address", StringType(), True),
+  StructField("from_address", StringType(), True),
+  StructField("to_address", StringType(), True),
+  StructField("value", DecimalType(38,0), True),   
+  StructField("block_number", LongType(), True),
+])
+
+assert ddl_schema == _parse_datatype_string("token_address string ,from_address string ,to_address string ,value decimal(38,0), block_number long"), "File not present in Silver Path"
+
+print("Assertion passed.")
+
+# COMMAND ----------
+
 block_date = block_silver.select("number","timestamp")
 
 # COMMAND ----------
 
 token_transfer_selected = erc20_tokentransfer.join(block_date,erc20_tokentransfer.block_number==block_date.number, "left").filter(col("timestamp")>=start_date).select("token_address","from_address","to_address","value")
+
+# COMMAND ----------
+
+ddl_schema = StructType([
+  StructField("token_address", StringType(), True),
+  StructField("from_address", StringType(), True),
+  StructField("to_address", StringType(), True),
+  StructField("value", DecimalType(38,0), True),   
+])
+
+assert ddl_schema == _parse_datatype_string("token_address string ,from_address string ,to_address string ,value decimal(38,0)"), "File not present in Silver Path"
+
+print("Assertion passed.")
 
 # COMMAND ----------
 
@@ -267,6 +350,19 @@ wallet_count=buy.join(sell,(sell.from_address==buy.to_address) & (sell.token_add
 # COMMAND ----------
 
 wallet_count=wallet_count.select(col('to_address').alias('wallet_address'),col("token_address_buy").alias('token_address'),"buy_count",'sell_count')
+
+# COMMAND ----------
+
+ddl_schema = StructType([
+  StructField("wallet_address", StringType(), True),
+  StructField("token_address", StringType(), True),  
+  StructField("buy_count", LongType(), True),
+  StructField("sell_count", LongType(), True),
+])
+
+assert ddl_schema == _parse_datatype_string("wallet_address string ,token_address string, buy_count long, sell_count long"), "File not present in Silver Path"
+
+print("Assertion passed.")
 
 # COMMAND ----------
 
