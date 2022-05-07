@@ -110,6 +110,19 @@ print(perc*100,'% of transactions are calls to contracts')
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC select token_address,count(transaction_hash) tran_cnt
+# MAGIC from ethereumetl.token_transfers
+# MAGIC group by token_address
+# MAGIC order by tran_cnt desc
+# MAGIC limit 100
+
+# COMMAND ----------
+
+# Python Approach
+
+# COMMAND ----------
+
 transferDF = spark.sql('select * from ethereumetl.token_transfers')
 
 # COMMAND ----------
